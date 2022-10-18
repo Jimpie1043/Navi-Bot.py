@@ -2,11 +2,15 @@
 import random
 import discord
 from discord.ext import commands
-from discord.ext.commands import has_permissions, MissingPermissions, bot_has_permissions
+from discord.ext.commands import has_permissions, bot_has_permissions
 import configparser
 import pytube
 import os
 import sys
+from time import sleep
+from datetime import datetime
+from pytz import timezone
+from termcolor import colored
 
 
     #Initializing the bot
@@ -18,14 +22,18 @@ intent.members = True
 intent.message_content = True
 default_prefix = '!'
 bot = commands.Bot(command_prefix=default_prefix, intents = intent)        #Sets the prefix and intents for all commands
-
+global limit
+limit = 1       #Limits the use of the download_mp3 command
+global uses
+uses = 0
 listening = True        #If this is set to False, the bot won't listen to any command, except for !connect which turns this variable back to True and !exit which exits the code completely
+tz = timezone('America/New_York')        #Eastern Time timezone
 
 
     #Defining events
 @bot.event
 async def on_ready():
-    print('Logged in as {0.user}'.format(bot))       #Returns this message when the bot goes online
+    print(colored('Logged in as {0.user}'.format(bot), "green", attrs=["bold"]))       #Returns this message when the bot goes online
     await bot.get_channel(1030245888154665000).send('Back online!')     #Sends message in a specific channel
     songs = [
         'Rhythm Doctor OST - wish i could care less (ft. Yeo)',
@@ -61,8 +69,10 @@ async def on_ready():
 async def on_message(message):      #This section of code will create a log of all messages in the server
     username = str(message.author).split('#')[0]
     user_message = str(message.content)
-    channel = str(message.channel.name)
-    print(f'{username}: {user_message} ({channel})')
+    channel = '#' + str(message.channel.name)
+    message_time = datetime.now(tz)     #Gets the current time with the specified timezone
+    formatted_message_time = message_time.strftime("%b-%d-%Y %H:%M:%S")     #Changes the time to the specified format (Ex: Oct-18-2022 13:28:08)
+    print(f'{colored(formatted_message_time, "grey")} {colored(channel.upper(), "blue", attrs=["bold"])}    {colored(username, "red", attrs=["bold"])}: {user_message}')
     await bot.process_commands(message)
 
 
@@ -110,26 +120,42 @@ async def refresh(ctx):     #Refresh command
 async def ping(ctx):        #Ping command
     if listening == True:       #Will be set to False if !disconnect is used
         await ctx.send(f'Pong! {round(bot.latency * 1000)}ms')
+    else:
+        await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
 
 @bot.command(name='download_mp3', aliases = ['download.mp3', 'download_audio'], description='Download a video from youtube as a .mp3 file.')
 async def download_mp3(ctx, url):        #Download yt audio command
-    if listening == True:       #Will be set to False if !disconnect is used
-        yt = pytube.YouTube(url)
-        stream = yt.streams.first()
-        stream.download(output_path=r'D:\Downloads\videos', filename='video.mp3')
-        await ctx.send(file=discord.File(r'D:\Downloads\videos\video.mp3'))
-        os.remove(r'D:\Downloads\videos\video.mp3')
-
-
-@bot.command(name='download_mp4', aliases=['download.mp4', 'download_video'], description='Download a video from youtube as a .mp4 file.')
-async def download_mp4(ctx, url):        #Download yt video command
-    if listening == True:       #Will be set to False if !disconnect is used
-        yt = pytube.YouTube(url)
-        stream = yt.streams.first()
-        stream.download(output_path=r'D:\Downloads\videos', filename='video.mp4')
-        await ctx.send(file=discord.File(r'D:\Downloads\videos\video.mp4'))
-        os.remove(r'D:\Downloads\videos\video.mp4')
+    if listening == True:       #Listening will be set to False if !disconnect is used
+        global uses
+        uses += 1
+        if uses <= limit:       #Represents the amount of times this command is being used at a time compared to the limit that is allowed (default is 1)
+            yt = pytube.YouTube(url)
+            filesize = yt.streams.first().filesize
+            if filesize < 24000000:       #Checks if the file is bigger than 24 MB
+                title = yt.streams[0].title
+                if filesize > 12000000:     #If we're dealing with a bigger file, display longer download time
+                    await ctx.send(f'Downloading "{title}". This could take up to 30 seconds.')
+                elif filesize > 6000000:
+                    await ctx.send(f'Downloading "{title}". This should take less than 20 seconds.')
+                else:
+                    await ctx.send(f'Downloading "{title}"...')
+                stream = yt.streams.first()
+                stream.download(output_path=r'D:\Downloads\videos', filename=f'{title}.mp3')
+                await ctx.send(file=discord.File(rf'D:\Downloads\videos\{title}.mp3'))
+                os.remove(rf'D:\Downloads\videos\{title}.mp3')
+                sleep(5)        #5 second delay to prevent anyone from spamming this command
+                uses -= 1
+            else:
+                await ctx.send(f'Error: File is bigger than 24 MB. Max video length is about 40 minutes.')
+                sleep(3)
+                uses -= 1
+        else:
+            await ctx.send(f'Please do not spam this command!')
+            sleep(3)
+            uses -= 1
+    else:
+        await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
 
 @bot.command(name='clear', aliases=['purge'], description='Deletes the specified amount of messages in a channel.')
@@ -146,15 +172,8 @@ async def clear(ctx, amount=None):       #Clear command (default value is None)
                 await ctx.send('Please enter a valid integer as amount.')
             else:
                 await ctx.channel.purge(limit=amount)
-
-
-"""@bot.command(name='prefix', description="Change the bot's prefix.")
-@has_permissions(administrator=True)
-@commands.guild_only()
-async def prefix(ctx, prefix=''):        #Prefix command
-    if listening == True:       #Will be set to False if !disconnect is used
-        custom_prefix[ctx.guild.id] = prefix.split() or default_prefix      #Changes the prefix for all commands
-        await ctx.send(f'Prefix changed to "{prefix}"!')"""
+    else:
+        await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
 
     #Running the bot
