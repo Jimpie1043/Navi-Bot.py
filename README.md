@@ -1,2 +1,2 @@
 # Navi-Bot
- Discord bot project
+ A discord bot for my discord server!
