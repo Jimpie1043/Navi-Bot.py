@@ -22,10 +22,14 @@ intent.members = True
 intent.message_content = True
 default_prefix = '!'
 bot = commands.Bot(command_prefix=default_prefix, intents = intent)        #Sets the prefix and intents for all commands
-global limit
-limit = 1       #Limits the use of the download_mp3 command
-global uses
-uses = 0
+global download_mp3_limit
+download_mp3_limit = 1       #Limits the use of the download_mp3 command
+global download_mp3_uses
+download_mp3_uses = 0
+global play_limit
+play_limit = 1       #Limits the use of the play command
+global play_uses
+play_uses = 0
 listening = True        #If this is set to False, the bot won't listen to any command, except for !connect which turns this variable back to True and !exit which exits the code completely
 tz = timezone('America/New_York')        #Eastern Time timezone
 
@@ -127,9 +131,9 @@ async def ping(ctx):        #Ping command
 @bot.command(name='download_mp3', aliases = ['download.mp3', 'download_audio'], description='Download a video from youtube as a .mp3 file.')
 async def download_mp3(ctx, url):        #Download yt audio command
     if listening == True:       #Listening will be set to False if !disconnect is used
-        global uses
-        uses += 1
-        if uses <= limit:       #Represents the amount of times this command is being used at a time compared to the limit that is allowed (default is 1)
+        global download_mp3_uses
+        download_mp3_uses += 1
+        if download_mp3_uses <= download_mp3_limit:       #Represents the amount of times this command is being used at a time compared to the limit that is allowed (default is 1)
             yt = pytube.YouTube(url)
             filesize = yt.streams.first().filesize
             if filesize < 24000000:       #Checks if the file is bigger than 24 MB
@@ -145,15 +149,15 @@ async def download_mp3(ctx, url):        #Download yt audio command
                 await ctx.send(file=discord.File(rf'D:\Downloads\videos\{title}.mp3'))
                 os.remove(rf'D:\Downloads\videos\{title}.mp3')
                 sleep(5)        #5 second delay to prevent anyone from spamming this command
-                uses -= 1
+                download_mp3_uses -= 1
             else:
                 await ctx.send(f'Error: File is bigger than 24 MB. Max video length is about 40 minutes.')
                 sleep(3)
-                uses -= 1
+                download_mp3_uses -= 1
         else:
             await ctx.send(f'Please do not spam this command!')
             sleep(3)
-            uses -= 1
+            download_mp3_uses -= 1
     else:
         await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
@@ -172,6 +176,45 @@ async def clear(ctx, amount=None):       #Clear command (default value is None)
                 await ctx.send('Please enter a valid integer as amount.')
             else:
                 await ctx.channel.purge(limit=amount)
+    else:
+        await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
+
+
+@bot.command(name='play', description='Plays music in the vc where users are currently connected or the first vc it finds.')
+async def play(ctx, url, vc=""):        #Play command
+    if listening == True:       #Will be set to False if !disconnect is used
+        global play_uses
+        play_uses += 1
+        if play_uses <= play_limit:       #Represents the amount of times this command is being used at a time compared to the limit that is allowed (default is 1)
+            if ctx.author.voice and ctx.author.voice.channel and vc == "":
+                vc = ctx.author.voice.channel
+                yt = pytube.YouTube(url)
+                filesize = yt.streams.first().filesize
+                if filesize < 24000000:       #Checks if the file is bigger than 24 MB
+                    title = yt.streams[0].title
+                    if filesize > 12000000:     #If we're dealing with a bigger file, display longer download time
+                        await ctx.send(f'Downloading "{title}". This could take up to 30 seconds.')
+                    elif filesize > 6000000:
+                        await ctx.send(f'Downloading "{title}". This should take less than 20 seconds.')
+                    stream = yt.streams.first()
+                    stream.download(output_path=r'D:\Downloads\videos', filename=f'{title}.mp3')
+                    await ctx.send(f'Playing "{title}" in {vc}.')
+                    connected = await vc.connect()
+                    connected.play(discord.FFmpegPCMAudio(executable='ffmpeg.exe', source=rf'D:\Downloads\videos\{title}.mp3'), after=lambda e: os.remove(rf'D:\Downloads\videos\{title}.mp3'))
+                    sleep(5)        #5 second delay to prevent anyone from spamming this command
+                    play_uses -= 1
+                else:
+                    await ctx.send(f'Error: File is bigger than 24 MB. Max video length is about 40 minutes.')
+                    sleep(3)
+                    play_uses -= 1
+            else:
+                await ctx.send(f'You need to be in a vc or to specify the name of the vc to use this command!')
+                play_uses -= 1
+                return
+        else:
+            await ctx.send(f'Please do not spam this command!')
+            sleep(3)
+            play_uses -= 1
     else:
         await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
