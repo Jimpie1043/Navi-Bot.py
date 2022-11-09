@@ -12,6 +12,7 @@ from datetime import datetime
 from pytz import timezone
 from termcolor import colored
 import threading
+import re
 
 
     #Initializing the bot
@@ -144,8 +145,8 @@ async def download_mp3(ctx, url):        #Download yt audio command
                     await ctx.send(f'Downloading "{title}". This should take less than 20 seconds.')
                 else:
                     await ctx.send(f'Downloading "{title}"...')
-                file_name = 'video' + str(download_mp3_uses)
                 stream = yt.streams.first()
+                file_name = re.sub('[^A-Za-z0-9]+', ' ', title)
                 stream.download(output_path=r'D:\Downloads\videos', filename=f'{file_name}.mp3')
                 await ctx.send(file=discord.File(rf'D:\Downloads\videos\{file_name}.mp3'))
                 os.remove(rf'D:\Downloads\videos\{file_name}.mp3')
