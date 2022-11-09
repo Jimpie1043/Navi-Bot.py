@@ -16,7 +16,7 @@ import threading
 
     #Initializing the bot
 config = configparser.ConfigParser()
-config.read(r'C:\Users\super\OneDrive\Bureau\Python\Navi-Bot\config.txt')
+config.read(r'D:\PythonProjects\Navi-Bot\config.txt')
 token = config.get('CONFIG', 'DISCORD_TOKEN')
 intent = discord.Intents.all()
 intent.members = True
@@ -123,7 +123,7 @@ async def ping(ctx):        #Ping command
 
 #Download_mp3 variables
 global download_mp3_limit
-download_mp3_limit = 1       #Limits the !download_mp3 command to 1 use
+download_mp3_limit = 10       #Limits the !download_mp3 command
 global download_mp3_uses
 download_mp3_uses = 0       #Represents the amount of times the !download_mp3 command is being used
 
@@ -144,10 +144,11 @@ async def download_mp3(ctx, url):        #Download yt audio command
                     await ctx.send(f'Downloading "{title}". This should take less than 20 seconds.')
                 else:
                     await ctx.send(f'Downloading "{title}"...')
+                file_name = 'video' + str(download_mp3_uses)
                 stream = yt.streams.first()
-                stream.download(output_path=r'D:\Downloads\videos', filename=f'{title}.mp3')
-                await ctx.send(file=discord.File(rf'D:\Downloads\videos\{title}.mp3'))
-                os.remove(rf'D:\Downloads\videos\{title}.mp3')
+                stream.download(output_path=r'D:\Downloads\videos', filename=f'{file_name}.mp3')
+                await ctx.send(file=discord.File(rf'D:\Downloads\videos\{file_name}.mp3'))
+                os.remove(rf'D:\Downloads\videos\{file_name}.mp3')
                 sleep(5)        #5 second delay to prevent anyone from spamming this command
                 download_mp3_uses -= 1
             else:
