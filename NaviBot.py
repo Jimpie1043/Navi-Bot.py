@@ -1,17 +1,26 @@
     #Imports
 import random
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions, bot_has_permissions
+
 import configparser
+
 import pytube
+from pytube import Playlist
+
 import os
 import sys
+
 from time import sleep
 from datetime import datetime
 from pytz import timezone
+
 from termcolor import colored
+
 import threading
+
 import re
 
 
@@ -32,34 +41,12 @@ listening = True        #If this is set to False, the bot won't listen to any co
 async def on_ready():
     print(colored('Logged in as {0.user}'.format(bot), "green", attrs=["bold"]))       #Returns this message when the bot goes online
     await bot.get_channel(1030245888154665000).send('Back online!')     #Sends message in a specific channel
-    songs = [
-        'Rhythm Doctor OST - wish i could care less (ft. Yeo)',
-        "Breakbot - Baby I'm Yours (feat. Irfane)",
-        'Discord (Remix) - Eurobeat Brony',
-        'Warframe | We All Lift Together',
-        'NOMA - Brain Power',
-        'GLORYHAMMER - Hootsforce (Official Video) | Napalm Records',
-        'ECHO【Gumi English】Crusher-P: The Living Tombstone Remix',
-        'ロストアンブレラ',
-        'Terraria Calamity Mod Music - "1NF3S+@+!0N" - Theme of Crabulon',
-        'Legend (ft. Backchat)',
-        'Fall Out Boy - Centuries',
-        'Goddess (feat. Nonon)',
-        'Hammer And The Anvil',
-        'Wii Shop Channel [Eurobeat Remix]',
-        "Kirby's Dreamland 3 - Sand Canyon 1",
-        'Super Smash Bros. Ultimate - Lifelight [Eurobeat Remix]',
-        "CYBERPUNK 2077 SOUNDTRACK - WHO'S READY FOR TOMORROW by Rat Boy & IBDY",
-        'Mario Kart DS - Waluigi Pinball [Eurobeat Remix]',
-        'Bury The Heart(Gigachad Vergil)',
-        '20201005~20201007',
-        "Windows XP Theme but it's an rpg soundtrack (full version)",
-        'Driftveil City - Pokémon Black & White (Metal Cover by RichaadEB)',
-        'Sonic Boom/Snake Pit ~ Brass Fanfare',
-        '【東方Vocal】【東方永夜抄】Silver Forest Lunatic EURO'
-    ]
+    playlist = Playlist('https://www.youtube.com/playlist?list=PLdQuoZISCj_5xtPcDWPP6AwMwydh-VU4Y')
+    songs = []
+    for video in playlist.videos:
+        songs.append(video.title)
     rand_song = random.choice(songs)
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=rand_song))      #Changes the bot's displayed status to a random song from the list
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=rand_song))      #Changes the bot's displayed status to a random song from the playlist
 
 
 @bot.event
@@ -124,7 +111,7 @@ async def ping(ctx):        #Ping command
 
 #Download_mp3 variables
 global download_mp3_limit
-download_mp3_limit = 10       #Limits the !download_mp3 command
+download_mp3_limit = 5       #Limits the !download_mp3 command
 global download_mp3_uses
 download_mp3_uses = 0       #Represents the amount of times the !download_mp3 command is being used
 
@@ -144,7 +131,7 @@ async def download_mp3(ctx, url):        #Download yt audio command
                 elif filesize > 6000000:
                     await ctx.send(f'Downloading "{title}". This should take less than 20 seconds.')
                 else:
-                    await ctx.send(f'Downloading "{title}"...')
+                    await ctx.send(f'Downloading "{title}"')
                 stream = yt.streams.first()
                 file_name = re.sub('[^A-Za-z0-9]+', ' ', title)
                 stream.download(output_path=r'D:\Downloads\videos', filename=f'{file_name}.mp3')
@@ -153,7 +140,7 @@ async def download_mp3(ctx, url):        #Download yt audio command
                 sleep(5)        #5 second delay to prevent anyone from spamming this command
                 download_mp3_uses -= 1
             else:
-                await ctx.send(f'Error: File is bigger than 24 MB. Max video length is about 40 minutes.')
+                await ctx.send(f'Error: File is bigger than 24 MB. Maximum video length is about 40 minutes.')
                 sleep(3)
                 download_mp3_uses -= 1
         else:
@@ -175,7 +162,7 @@ async def clear(ctx, amount=None):       #Clear command (default value is None)
             try:
                 int(amount)
             except: # Error handler
-                await ctx.send('Please enter a valid integer as amount.')
+                await ctx.send('Please enter a valid integer as the amount of messages to clear.')
             else:
                 await ctx.channel.purge(limit=amount)
     else:
@@ -264,6 +251,32 @@ async def playlist(ctx):        #List command
     else:
         await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
         play_uses -= 1
+
+
+@bot.command(name='download_playlist_mp3', aliases = ['download_playlist.mp3', 'download_playlist_audio'], description='Download videos from a youtube playlist as .mp3 files.')
+async def download_playlist_mp3(ctx, playlist_url):        #Download playlist audio command
+    if listening == True:       #Listening will be set to False if !disconnect is used
+        playlist = Playlist(playlist_url)
+        await ctx.send(f'Downloading all videos from "{playlist.title}"')
+        for video in playlist.videos:
+            filesize = video.streams.first().filesize
+            if filesize < 24000000:       #Checks if the file is bigger than 24 MB
+                title = video.streams[0].title
+                if filesize > 12000000:     #If we're dealing with a bigger file, display longer download time
+                    await ctx.send(f'Downloading "{title}". This could take up to 30 seconds.')
+                elif filesize > 6000000:
+                    await ctx.send(f'Downloading "{title}". This should take less than 20 seconds.')
+                else:
+                    await ctx.send(f'Downloading "{title}"')
+                stream = video.streams.first()
+                file_name = re.sub('[^A-Za-z0-9]+', ' ', title)
+                stream.download(output_path=r'D:\Downloads\videos', filename=f'{file_name}.mp3')
+                await ctx.send(file=discord.File(rf'D:\Downloads\videos\{file_name}.mp3'))
+                os.remove(rf'D:\Downloads\videos\{file_name}.mp3')
+            else:
+                await ctx.send(f'Error: File is bigger than 24 MB. Max video length is about 40 minutes.')
+    else:
+        await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
 
     #Running the bot
