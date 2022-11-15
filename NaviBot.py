@@ -1,27 +1,20 @@
     #Imports
+import configparser
+import os
 import random
+import re
+import sys
+import threading
+from datetime import datetime
+from time import sleep
 
 import discord
-from discord.ext import commands
-from discord.ext.commands import has_permissions, bot_has_permissions
-
-import configparser
-
 import pytube
+from discord.ext import commands
+from discord.ext.commands import bot_has_permissions, has_permissions
 from pytube import Playlist
-
-import os
-import sys
-
-from time import sleep
-from datetime import datetime
 from pytz import timezone
-
 from termcolor import colored
-
-import threading
-
-import re
 
 
     #Initializing the bot
@@ -64,6 +57,28 @@ async def on_message(message):      #This section of code will create a log of a
 @bot.event
 async def on_member_join(member):
     await bot.get_channel(1031492160404594698).send(f'Hey <@!{member.id}>! Welcome to {member.guild.name} <:Cool:1031669832845901965>')     #Send welcome message
+
+
+    #Error handling
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('Error: Required arguments missing.')
+        print('Error: Required arguments missing.')
+
+    if isinstance(error, commands.BadArgument):
+        await ctx.send('Error: Invalid argument used.')
+        print('Error: Invalid argument used.')
+
+    if isinstance(error, commands.NotOwner):
+        await ctx.send('Error: Only the owner can use this command!')
+        print('Error: Owner command only.')
+
+
+    #Check if the bot is in a guild
+@bot.check
+async def globally_block_dms(ctx):
+    return ctx.guild is not None
 
 
     #Defining commands
@@ -116,8 +131,8 @@ global download_mp3_uses
 download_mp3_uses = 0       #Represents the amount of times the !download_mp3 command is being used
 
 
-@bot.command(name='download_mp3', aliases = ['download.mp3', 'download_audio'], description='Download a video from youtube as a .mp3 file.')
-async def download_mp3(ctx, url):        #Download yt audio command
+@bot.command(name='download', description='Download a video from youtube as a .mp3 file.')
+async def download(ctx, url):        #Download yt audio command
     if listening == True:       #Listening will be set to False if !disconnect is used
         global download_mp3_uses
         download_mp3_uses += 1
@@ -147,6 +162,32 @@ async def download_mp3(ctx, url):        #Download yt audio command
             await ctx.send(f'Please do not spam this command!')
             sleep(3)
             download_mp3_uses -= 1
+    else:
+        await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
+
+
+@bot.command(name='download_playlist', aliases = ['playlist_download'], description='Download all the videos from a youtube playlist as .mp3 files.')
+async def download_playlist(ctx, playlist_url):        #Download playlist audio command
+    if listening == True:       #Listening will be set to False if !disconnect is used
+        playlist = Playlist(playlist_url)
+        await ctx.send(f'Downloading all videos from "{playlist.title}"')
+        for video in playlist.videos:
+            filesize = video.streams.first().filesize
+            if filesize < 24000000:       #Checks if the file is bigger than 24 MB
+                title = video.streams[0].title
+                if filesize > 12000000:     #If we're dealing with a bigger file, display longer download time
+                    await ctx.send(f'Downloading "{title}". This could take up to 30 seconds.')
+                elif filesize > 6000000:
+                    await ctx.send(f'Downloading "{title}". This should take less than 20 seconds.')
+                else:
+                    await ctx.send(f'Downloading "{title}"')
+                stream = video.streams.first()
+                file_name = re.sub('[^A-Za-z0-9]+', ' ', title)
+                stream.download(output_path=r'D:\Downloads\videos', filename=f'{file_name}.mp3')
+                await ctx.send(file=discord.File(rf'D:\Downloads\videos\{file_name}.mp3'))
+                os.remove(rf'D:\Downloads\videos\{file_name}.mp3')
+            else:
+                await ctx.send(f'Error: File is bigger than 24 MB. Max video length is about 40 minutes.')
     else:
         await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
@@ -247,36 +288,10 @@ async def play(ctx, url):        #Play command
 async def playlist(ctx):        #List command
     if listening == True:
         global song_list
-        await ctx.send(f"Here's the playlist: {song_list}")
+        await ctx.send(f"Here's the current playlist: {song_list}")
     else:
         await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
         play_uses -= 1
-
-
-@bot.command(name='download_playlist_mp3', aliases = ['download_playlist.mp3', 'download_playlist_audio'], description='Download videos from a youtube playlist as .mp3 files.')
-async def download_playlist_mp3(ctx, playlist_url):        #Download playlist audio command
-    if listening == True:       #Listening will be set to False if !disconnect is used
-        playlist = Playlist(playlist_url)
-        await ctx.send(f'Downloading all videos from "{playlist.title}"')
-        for video in playlist.videos:
-            filesize = video.streams.first().filesize
-            if filesize < 24000000:       #Checks if the file is bigger than 24 MB
-                title = video.streams[0].title
-                if filesize > 12000000:     #If we're dealing with a bigger file, display longer download time
-                    await ctx.send(f'Downloading "{title}". This could take up to 30 seconds.')
-                elif filesize > 6000000:
-                    await ctx.send(f'Downloading "{title}". This should take less than 20 seconds.')
-                else:
-                    await ctx.send(f'Downloading "{title}"')
-                stream = video.streams.first()
-                file_name = re.sub('[^A-Za-z0-9]+', ' ', title)
-                stream.download(output_path=r'D:\Downloads\videos', filename=f'{file_name}.mp3')
-                await ctx.send(file=discord.File(rf'D:\Downloads\videos\{file_name}.mp3'))
-                os.remove(rf'D:\Downloads\videos\{file_name}.mp3')
-            else:
-                await ctx.send(f'Error: File is bigger than 24 MB. Max video length is about 40 minutes.')
-    else:
-        await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
 
     #Running the bot
