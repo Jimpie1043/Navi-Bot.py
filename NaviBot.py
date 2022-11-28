@@ -16,7 +16,6 @@ from pytube import Playlist
 from pytz import timezone
 from termcolor import colored
 
-
     #Initializing the bot
 global file_location
 file_location = r'C:\Users\super\OneDrive\Bureau\PythonProjects\Navi-Bot'     #The location of the bot's files
