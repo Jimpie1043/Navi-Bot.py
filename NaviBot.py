@@ -16,10 +16,12 @@ from pytube import Playlist
 from pytz import timezone
 from termcolor import colored
 
-
     #Initializing the bot
+global file_location
+file_location = r'C:\Users\super\Desktop\PythonProjects\Navi-Bot'     #The location of the bot's files
+
 config = configparser.ConfigParser()
-config.read(r'D:\PythonProjects\Navi-Bot\config.txt')
+config.read(rf'{file_location}\config.txt')
 token = config.get('CONFIG', 'DISCORD_TOKEN')
 intent = discord.Intents.all()
 intent.members = True
@@ -149,9 +151,10 @@ async def download(ctx, url):        #Download yt audio command
                     await ctx.send(f'Downloading "{title}"')
                 stream = yt.streams.first()
                 file_name = re.sub('[^A-Za-z0-9]+', ' ', title)
-                stream.download(output_path=r'D:\Downloads\videos', filename=f'{file_name}.mp3')
-                await ctx.send(file=discord.File(rf'D:\Downloads\videos\{file_name}.mp3'))
-                os.remove(rf'D:\Downloads\videos\{file_name}.mp3')
+                global file_location
+                stream.download(output_path=rf'{file_location}\videos', filename=f'{file_name}.mp3')
+                await ctx.send(file=discord.File(rf'{file_location}\videos\{file_name}.mp3'))
+                os.remove(rf'{file_location}\videos\{file_name}.mp3')
                 sleep(5)        #5 second delay to prevent anyone from spamming this command
                 download_mp3_uses -= 1
             else:
@@ -183,9 +186,10 @@ async def download_playlist(ctx, playlist_url):        #Download playlist audio 
                     await ctx.send(f'Downloading "{title}"')
                 stream = video.streams.first()
                 file_name = re.sub('[^A-Za-z0-9]+', ' ', title)
-                stream.download(output_path=r'D:\Downloads\videos', filename=f'{file_name}.mp3')
-                await ctx.send(file=discord.File(rf'D:\Downloads\videos\{file_name}.mp3'))
-                os.remove(rf'D:\Downloads\videos\{file_name}.mp3')
+                global file_location
+                stream.download(output_path=rf'{file_location}\videos', filename=f'{file_name}.mp3')
+                await ctx.send(file=discord.File(rf'{file_location}\videos\{file_name}.mp3'))
+                os.remove(rf'{file_location}\videos\{file_name}.mp3')
             else:
                 await ctx.send(f'Error: File is bigger than 24 MB. Max video length is about 40 minutes.')
     else:
@@ -222,7 +226,8 @@ song_number = 0
 
 
 async def after_play(ctx, file_name):       #After song stops playing in !play command
-    os.remove(rf'D:\Downloads\videos\{file_name}')
+    global file_location
+    os.remove(rf'{file_location}\videos\{file_name}')
     global song_list
     if list != []:
         await play(ctx, song_list[0])       #If the list is not empty, plays the next song in the list after the bot is done playing the current song and removes it from the list
@@ -242,11 +247,11 @@ async def play_download_mp3(ctx, url, vc):      #Download and play the .mp3 file
         stream = yt.streams.first()
         global song_number
         file_name = f'video{song_number}.mp3'       #What the file is going to be saved as in the computer
-        stream.download(output_path=r'D:\Downloads\videos', filename=file_name)
+        stream.download(output_path=rf'{file_location}\videos', filename=file_name)
         await ctx.send(f'Playing "{title}" in {vc}.')
         print(vc)
         connected = await vc.connect()
-        connected.play(discord.FFmpegPCMAudio(executable='ffmpeg.exe', source=rf'D:\Downloads\videos\{file_name}'), after=lambda e: (await after_play(ctx, file_name) for _ in '_').__anext__())
+        connected.play(discord.FFmpegPCMAudio(executable='ffmpeg.exe', source=rf'{file_location}\videos\{file_name}'), after=lambda e: (await after_play(ctx, file_name) for _ in '_').__anext__())
                 #Plays the song that's been downloaded and goes to after_play() after it's done
         sleep(5)        #5 second delay to prevent anyone from spamming this command
         return
@@ -299,7 +304,6 @@ async def playlist(ctx):        #List command
   threading.Timer(5.0, printit).start()
   global play_uses
   print(play_uses)
-
 printEveryNSeconds()"""
 
 

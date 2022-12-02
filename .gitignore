@@ -1,2 +1,4 @@
 #File where bot token is stored
 config.txt
+#Venv
+venv
