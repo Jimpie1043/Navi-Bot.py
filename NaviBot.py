@@ -17,8 +17,8 @@ from pytz import timezone
 from termcolor import colored
 
     #Initializing the bot
-global file_location
 file_location = r'C:\Users\super\Desktop\PythonProjects\Navi-Bot'     #The location of the bot's files
+main_channel = 1051041777211158628      #The channel the bot will connect to (should be private)
 
 config = configparser.ConfigParser()
 config.read(rf'{file_location}\config.txt')
@@ -35,7 +35,8 @@ listening = True        #If this is set to False, the bot won't listen to any co
 @bot.event
 async def on_ready():
     print(colored('Logged in as {0.user}'.format(bot), "green", attrs=["bold"]))       #Returns this message when the bot goes online
-    await bot.get_channel(1030245888154665000).send('Back online!')     #Sends message in a specific channel
+    global main_channel
+    await bot.get_channel(main_channel).send('Back online!')     #Sends message in a specific channel
     playlist = Playlist('https://www.youtube.com/playlist?list=PLdQuoZISCj_5xtPcDWPP6AwMwydh-VU4Y')
     songs = []
     for video in playlist.videos:
@@ -58,7 +59,8 @@ async def on_message(message):      #This section of code will create a log of a
 
 @bot.event
 async def on_member_join(member):
-    await bot.get_channel(1031492160404594698).send(f'Hey <@!{member.id}>! Welcome to {member.guild.name} <:Cool:1031669832845901965>')     #Send welcome message
+    global main_channel
+    await bot.get_channel(main_channel).send(f'Hey <@!{member.id}>! Welcome to {member.guild.name} <:Cool:1031669832845901965>')     #Send welcome message
 
 
     #Error handling
@@ -206,10 +208,10 @@ async def clear(ctx, amount=None):       #Clear command (default value is None)
         else:
             try:
                 int(amount)
-            except: # Error handler
+            except:     #Error handler
                 await ctx.send('Please enter a valid integer as the amount of messages to clear.')
             else:
-                await ctx.channel.purge(limit=amount)
+                await ctx.channel.purge(limit=int(amount))
     else:
         await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
