@@ -15,20 +15,23 @@ from discord.ext.commands import bot_has_permissions, has_permissions
 from pytube import Playlist
 from pytz import timezone
 from termcolor import colored
+from pushover import PushoverClient
 
     #Initializing the bot
 file_location = r'C:\Users\super\Desktop\PythonProjects\Navi-Bot'     #The location of the bot's files
-main_channel = 1051041777211158628      #The channel the bot will connect to (should be private)
+main_channel = 1030245888154665000      #The channel the bot will connect to
 
 config = configparser.ConfigParser()
 config.read(rf'{file_location}\config.txt')
-token = config.get('CONFIG', 'DISCORD_TOKEN')
+discord_token = config.get('CONFIG', 'DISCORD_TOKEN')
+pushover_token = config.get('CONFIG', 'PUSHOVER_TOKEN')
+pushover_api = config.get('CONFIG', 'PUSHOVER_API')
 intent = discord.Intents.all()
 intent.members = True
 intent.message_content = True
 default_prefix = '!'
 bot = commands.Bot(command_prefix=default_prefix, intents = intent)        #Sets the prefix and intents for all commands
-listening = True        #If this is set to False, the bot won't listen to any command, except for !connect which turns this variable back to True and !exit which exits the code completely
+listening = True        #If this is set to False, the bot won't listen to any command, except for owner only commands
 
 
     #Defining events
@@ -211,7 +214,7 @@ async def clear(ctx, amount=None):       #Clear command (default value is None)
             except:     #Error handler
                 await ctx.send('Please enter a valid integer as the amount of messages to clear.')
             else:
-                await ctx.channel.purge(limit=int(amount))
+                await ctx.channel.purge(limit=int(amount) + 1)
     else:
         await ctx.send(f"I am currently set to answer <@!309650289932369922>'s commands only. Please try again later.")
 
@@ -301,6 +304,14 @@ async def playlist(ctx):        #List command
         play_uses -= 1
 
 
+@bot.command(name='notif', aliases=['notification'], description='Sends a notification on iOS')
+@commands.is_owner()
+async def notif(ctx, message):        #Notif command
+    await ctx.send('Sending a notification...')
+    client = PushoverClient(pushover_token, api_token=pushover_api)
+    client.send_message(message, title='Navi Bot')
+
+
     #Running the bot
 """def printEveryNSeconds():       #Prints the value of something every 5 seconds if you need to debug
   threading.Timer(5.0, printit).start()
@@ -310,4 +321,4 @@ printEveryNSeconds()"""
 
 
 
-bot.run(token)
+bot.run(discord_token)
