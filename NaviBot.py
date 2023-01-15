@@ -12,17 +12,17 @@ import discord
 import pytube
 from discord.ext import commands
 from discord.ext.commands import bot_has_permissions, has_permissions
+from pushover import PushoverClient
 from pytube import Playlist
 from pytz import timezone
 from termcolor import colored
-from pushover import PushoverClient
 
-    #Initializing the bot
-file_location = r'C:\Users\super\Desktop\PythonProjects\Navi-Bot'     #The location of the bot's files
+    #Initializing the bot   
+file_location = os.path.dirname(os.path.realpath(__file__))     #The location of the bot's files
 main_channel = 1030245888154665000      #The channel the bot will connect to
 
 config = configparser.ConfigParser()
-config.read(rf'{file_location}\config.txt')
+config.read(rf'{file_location}/config.txt')
 discord_token = config.get('CONFIG', 'DISCORD_TOKEN')
 pushover_token = config.get('CONFIG', 'PUSHOVER_TOKEN')
 pushover_api = config.get('CONFIG', 'PUSHOVER_API')
