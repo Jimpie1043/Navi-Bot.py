@@ -221,15 +221,20 @@ async def clear(ctx, amount=None):       #Clear command (default value is None)
             await ctx.channel.purge(limit=int(amount) + 1)
         return
     await ctx.channel.purge(limit=1000000)
-        
 
 
-@bot.command(name='notif', aliases=['notification'], description='Sends a notification on iOS')
+@bot.command(name='dice', description='Roll a dice of any size')
+async def dice(ctx, max):        #Dice command
+    roll = random.randint(1,int(max))
+    await ctx.send(roll)
+
+
+"""@bot.command(name='notif', aliases=['notification'], description='Sends a notification on iOS')
 @commands.is_owner()
 async def notif(ctx, message):        #Notif command
     await ctx.send('Sending a notification...')
     client = PushoverClient(pushover_token, api_token=pushover_api)
-    client.send_message(message, title='Navi Bot')
+    client.send_message(message, title='Navi Bot')"""
 
 
     #Running the bot
